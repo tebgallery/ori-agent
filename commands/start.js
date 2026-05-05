@@ -2,8 +2,9 @@
 
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const chalk = require('chalk');
+const execa = require('execa');
 const ado = require('../services/azureDevOps');
 const git = require('../services/git');
 const { selectFromList, confirm, askInput } = require('../utils/prompt');
@@ -36,16 +37,56 @@ function fail(msg) { console.log(chalk.red('✖'), msg); }
 function warn(msg) { console.log(chalk.yellow('⚠'), msg); }
 function info(msg) { console.log(chalk.cyan('ℹ'), msg); }
 
+const VSWHERE = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe';
+const DEVENV_KNOWN_PATHS = [
+  'C:\\Program Files\\Microsoft Visual Studio\\2026\\Professional\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2026\\Enterprise\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2026\\Community\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2019\\Professional\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2019\\Enterprise\\Common7\\IDE\\devenv.exe',
+  'C:\\Program Files\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\devenv.exe',
+];
+
+async function findDevenv() {
+  try {
+    const { stdout } = await execa('where', ['devenv']);
+    if (stdout.trim()) return 'devenv';
+  } catch {}
+
+  if (fs.existsSync(VSWHERE)) {
+    try {
+      const { stdout } = await execa(VSWHERE, ['-latest', '-find', 'Common7\\IDE\\devenv.exe']);
+      const found = stdout.trim().split('\n')[0].trim();
+      if (found && fs.existsSync(found)) return found;
+    } catch {}
+  }
+
+  for (const p of DEVENV_KNOWN_PATHS) {
+    if (fs.existsSync(p)) return p;
+  }
+
+  return null;
+}
+
 async function maybeOpenVisualStudio(repoDir) {
   const slnPath = findSlnFile(repoDir);
   if (!slnPath) return;
   const open = await confirm(`¿Desea abrir la solución en Visual Studio? (${path.basename(slnPath)})`);
   if (!open) return;
-  const { spawn } = require('child_process');
-  const child = spawn('devenv', [slnPath], { detached: true, stdio: 'ignore', windowsHide: false });
-  child.on('error', (err) => warn(`devenv error: ${err.message}`));
+
+  const devenv = await findDevenv();
+  if (!devenv) {
+    warn('No se encontró Visual Studio instalado en esta máquina.');
+    return;
+  }
+
+  const child = spawn(devenv, [slnPath], { detached: true, stdio: 'ignore', windowsHide: false });
+  child.on('error', (err) => warn(`Error al abrir Visual Studio: ${err.message}`));
   child.unref();
-  ok(`Abriendo ${path.basename(slnPath)} con devenv...`);
+  ok(`Abriendo ${path.basename(slnPath)} con Visual Studio...`);
 }
 
 function branchChoices(branchesInfo) {

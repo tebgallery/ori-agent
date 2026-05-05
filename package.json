@@ -1,0 +1,25 @@
+{
+  "name": "ori",
+  "version": "1.0.0",
+  "description": "CLI para automatizar inicio de tareas de desarrollo en Azure DevOps",
+  "main": "index.js",
+  "bin": {
+    "ori": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "build": "pkg index.js --targets node18-win-x64 --output dist/ori.exe"
+  },
+  "pkg": {
+    "assets": [
+      "config.json"
+    ],
+    "outputPath": "dist"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "chalk": "^4.1.2",
+    "execa": "^5.1.1",
+    "inquirer": "^8.2.6"
+  }
+}

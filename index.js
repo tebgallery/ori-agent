@@ -11,6 +11,7 @@ const [,, command, ...args] = process.argv;
 if (!command) {
   console.log(`Uso: ori <comando> [args]`);
   console.log(`  start [workItemId]   Inicia una tarea de desarrollo`);
+  console.log(`  update               Actualiza ori a la última versión`);
   process.exit(0);
 }
 
@@ -27,6 +28,9 @@ if (command === 'start') {
       console.error(chalk.red('\n✖'), err.message);
       process.exit(1);
     });
+} else if (command === 'update') {
+  const { update } = require('./commands/update');
+  update();
 } else {
   console.error(chalk.red('✖'), `Comando desconocido: "${command}"`);
   process.exit(1);

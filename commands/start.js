@@ -8,7 +8,7 @@ const ado = require('../services/azureDevOps');
 const git = require('../services/git');
 const { selectFromList, confirm, askInput } = require('../utils/prompt');
 const { refreshPat } = require('../utils/config');
-const { AuthError } = require('../services/azureDevOps');
+const { AuthError, ConfigError } = require('../services/azureDevOps');
 
 const TYPE_PREFIXES = {
   Bug: 'bug',
@@ -154,6 +154,9 @@ async function prepareRepo(config, configPath) {
     if (err instanceof AuthError) {
       config = await refreshPat(config, configPath);
       repositories = await ado.getRepositories(config);
+    } else if (err instanceof ConfigError) {
+      fail(err.message);
+      process.exit(1);
     } else {
       fail(`No se pudo obtener repositorios: ${err.message}`);
       process.exit(1);

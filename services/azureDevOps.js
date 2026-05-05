@@ -9,6 +9,13 @@ class AuthError extends Error {
   }
 }
 
+class ConfigError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ConfigError';
+  }
+}
+
 function createClient(config) {
   const token = Buffer.from(`:${config.pat}`).toString('base64');
   const client = axios.create({
@@ -23,9 +30,20 @@ function createClient(config) {
   });
 
   client.interceptors.response.use(null, (err) => {
-    const status = err.response && err.response.status;
+    if (!err.response) {
+      throw new ConfigError('Sin conexión a Azure DevOps. Verificá tu conexión a internet o VPN.');
+    }
+    const status = err.response.status;
     if (status === 401 || status === 203 || status === 403) throw new AuthError();
-    throw err;
+    if (status === 404) {
+      throw new ConfigError(
+        `Organización o proyecto no encontrado.\n` +
+        `  Organización: "${config.organization}"\n` +
+        `  Proyecto:     "${config.project}"\n` +
+        `  Verificá que los valores sean correctos en Azure DevOps.`
+      );
+    }
+    throw new ConfigError(`Error inesperado de Azure DevOps (HTTP ${status}): ${err.message}`);
   });
 
   return client;
@@ -54,4 +72,4 @@ async function getRepositories(config) {
   }));
 }
 
-module.exports = { getWorkItem, getRepositories, AuthError };
+module.exports = { getWorkItem, getRepositories, AuthError, ConfigError };

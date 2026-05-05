@@ -2,12 +2,7 @@
 
 const inquirer = require('inquirer');
 
-function clearScreen() {
-  process.stdout.write('\x1Bc');
-}
-
 async function selectFromList(message, choices, header = null) {
-  clearScreen();
   if (header) console.log(header + '\n');
   const { selection } = await inquirer.prompt([
     {
@@ -21,7 +16,6 @@ async function selectFromList(message, choices, header = null) {
 }
 
 async function confirm(message) {
-  clearScreen();
   const { confirmed } = await inquirer.prompt([
     {
       type: 'confirm',
@@ -34,7 +28,6 @@ async function confirm(message) {
 }
 
 async function askInput(message) {
-  clearScreen();
   const { value } = await inquirer.prompt([
     {
       type: 'input',

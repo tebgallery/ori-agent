@@ -279,8 +279,22 @@ async function startWithWorkItem(workItemId, config, configPath) {
 
   await safeCheckoutAndPull(repoDir, baseBranch);
 
-  const branchName = buildBranchName(workItem.type, workItem.id, workItem.title);
-  console.log(chalk.cyan('\nBranch a crear:'), chalk.bold(branchName));
+  const autoBranchName = buildBranchName(workItem.type, workItem.id, workItem.title);
+
+  const nameMode = await selectFromList('¿Cómo querés nombrar la rama?', [
+    { name: `Automático  →  ${chalk.bold(autoBranchName)}`, value: 'auto' },
+    { name: 'Manual (ingresar nombre)',                       value: 'manual' },
+  ]);
+
+  let branchName;
+  if (nameMode === 'auto') {
+    const keepAuto = await confirm(`¿Usar "${autoBranchName}"?`);
+    branchName = keepAuto
+      ? autoBranchName
+      : await askInput('Ingresá el nombre de la rama:');
+  } else {
+    branchName = await askInput('Ingresá el nombre de la rama:');
+  }
 
   let existsRemote;
   try {
